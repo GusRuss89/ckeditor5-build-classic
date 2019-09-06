@@ -28,9 +28,115 @@
 
 <script src="../build/ckeditor.js"></script>
 <script>
-	ClassicEditor.create( document.querySelector( '#editor' ) )
+	const items = [
+    {
+      id: '#gratitude',
+      title: "What are three things I'm grateful for?",
+      template: '<ol><li></li></ol>'
+    },
+    {
+      id: '#stoicism',
+      title:
+        'What situation arose today that I might have been able to handle better?',
+      template: ''
+    },
+    {
+      id: '#selfconfidence',
+      title: 'Daily affirmations. I am...',
+      template: ''
+    },
+    {
+      id: '#thingsilearned',
+      title: 'What did I learn recently?',
+      template: ''
+    }
+  ]
+
+  function saveData(data) {
+    return new Promise( resolve => {
+      setTimeout( () => {
+        console.log( 'Saved', data );
+
+        resolve();
+      }, 500 );
+    } );
+  }
+
+  function getFeedItems(queryText) {
+    // As an example of an asynchronous action, return a promise
+    // that resolves after a 100ms timeout.
+    // This can be a server request or any sort of delayed action.
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const itemsToDisplay = items
+          // Filter out the full list of all items to only those matching the query text.
+          .filter(isItemMatching)
+          // Return 10 items max - needed for generic queries when the list may contain hundreds of elements.
+          .slice(0, 10)
+
+        resolve(itemsToDisplay)
+      }, 100)
+    })
+
+    // Filtering function - it uses the `name` and `username` properties of an item to find a match.
+    function isItemMatching(item) {
+      // Make the search case-insensitive.
+      const searchString = queryText.toLowerCase()
+
+      // Include an item in the search results if the name or username includes the current user input.
+      return (
+        item.id.toLowerCase().includes(searchString) ||
+        item.title.toLowerCase().includes(searchString)
+      )
+    }
+  }
+
+  function itemRenderer(item) {
+    const itemElement = document.createElement('span')
+    const hashtagElement = document.createElement('span')
+    const titleElement = document.createElement('span')
+
+    itemElement.classList.add('exercise-item')
+
+    hashtagElement.textContent = `${item.id}`
+    hashtagElement.classList.add('exercise-item__hashtag')
+
+    titleElement.textContent = `${item.title}`
+    titleElement.classList.add('exercise-item__title')
+
+    itemElement.appendChild(hashtagElement)
+    itemElement.appendChild(titleElement)
+
+    return itemElement
+  }
+
+	ClassicEditor.create( document.querySelector( '#editor' ), {
+    autosave: {
+      save( editor ) {
+        return saveData( editor.getData() );
+      }
+    },
+    mention: {
+			feeds: [
+				{
+					marker: '#',
+					feed: getFeedItems,
+					itemRenderer
+				}
+			]
+		}
+	} )
 		.then( editor => {
-			window.editor = editor;
+      window.editor = editor;
+      editor.plugins
+        .get('WordCount')
+        .on(
+          'update',
+          (evt, data) => {
+            console.log(data.words)
+            console.log(data.characters)
+          }
+        )
 		} )
 		.catch( err => {
 			console.error( err.stack );
